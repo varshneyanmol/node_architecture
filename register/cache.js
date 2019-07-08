@@ -24,10 +24,15 @@ mongoose.Query.prototype.exec = async function () {
     }
     console.log('CACHE ENABLED');
 
-    const locked = await lm.lock("lk", 50000);
-    console.log('LOCK STATUS: ' + locked);
-    const unlocked = await lm.unlock("lk");
-    console.log('UNLOCK STATUS: ' + unlocked);
+    // const locked = await lm.lock("lk", 50000);
+    // console.log('LOCK STATUS: ' + locked);
+    // const unlocked = await lm.unlock("lk");
+    // console.log('UNLOCK STATUS: ' + unlocked);
+    // const unlockedTrayAgain = await lm.unlock("lk");
+    // console.log('unlockedTrayAgain STATUS: ' + unlockedTrayAgain);
+    // const rr = await lm.retryableLock("lk", 5000, 10, 5);
+    // console.log("FINAL LOCK STATUS ALL AFTER: " + rr);
+
 
     //Note: This is done for deep cloning the query object.
     // Object.assign() does not deep clone the objects and array of objects.

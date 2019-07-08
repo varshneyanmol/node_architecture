@@ -3,8 +3,10 @@ require('./register/database_connection');
 require('./register/cache');
 
 var user = require('./routes/user');
+var constant = require('./routes/constant');
 
 app.use('/user', user);
+app.use('/constant', constant);
 app.get('/', (req, res) => {
     res.send(`Worker ${process.pid} served your request`);
 });

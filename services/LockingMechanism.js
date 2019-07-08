@@ -1,4 +1,6 @@
 class LockingMechanism {
+
+    // pass-in the redis-client object
     constructor(redisClient) {
         this.redis = redisClient;
     }
@@ -11,7 +13,7 @@ class LockingMechanism {
         return new Date().getTime() + ttl;
     }
 
-    lock(key, ttl = 5000) {
+    lock(key, ttl = 300) {
         return new Promise(async (resolve, reject) => {
             if (typeof key !== 'string') {
                 return reject({name: "key error", message: "key must be string"});
@@ -55,8 +57,30 @@ class LockingMechanism {
         });
     }
 
-    retryableLock(params) {
+    _sleep(milliseconds) {
+        return new Promise((resolve, reject) => setTimeout(resolve, milliseconds));
+    }
 
+    retryableLock(key, ttl = 300, retryAfter = 100, maxAttempts = 0) {
+        return new Promise(async (resolve, reject) => {
+            const keepRetrying = maxAttempts < 1;
+            let attempts = 0;
+
+            while(keepRetrying || (attempts < maxAttempts)) {
+                console.log('Attempt to Lock: ' + attempts);
+                let result;
+                try {
+                    result = await this.lock(key, ttl);
+                } catch(err) { return reject(err); }
+
+                if (result === 1) {
+                    return resolve(1);
+                }
+                attempts++;
+                await this._sleep(retryAfter);
+            }
+            resolve(0);
+        });
     }
 
     unlock(key) {
@@ -78,10 +102,14 @@ class LockingMechanism {
 
                     console.log("UNLOCK TRANSACTION RESULT: " + JSON.stringify(result));
                     if (result === null) {
-                        // this means transaction was aborted because
-                        this.redis.unwatch();
+                        // this means transaction was aborted because some other process modified the lock-key value.
+                        // It means some other process has the lock currently.
                         return resolve(0);
                     }
+                    // "result" will be an array as it is result of exec command which executes all the command in the transaction
+                    //  and returns the result of all those commands in an array.
+                    // Since we have only "del" command in this transaction, result array size will be 1.
+                    // Value at result[0] will be the number of keys deleted as a result of del command.
                     return resolve(result[0]);
                 });
         });
