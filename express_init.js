@@ -1,9 +1,35 @@
 var app = require('express')();
 require('./register/database_connection');
 require('./register/cache');
-
 var user = require('./routes/user');
 var constant = require('./routes/constant');
+
+
+process.on('SIGINT', () => {
+    console.log(`[Worker ${process.pid}]: Received SIGINT. Press Control-D to exit.`);
+});
+
+
+process.on('message', async function (message) {
+    if (message.command && message.command === 'POPULATE_REDIS') {
+        console.log(`[Worker ${process.pid}]: command ${message.command} from ${message.from}`);
+        try {
+            await populateRedis();
+            process.send({from: process.pid, command: "POPULATE_REDIS_SUCCESS"})
+
+        } catch(err) {
+            process.send({from: process.pid, command: "POPULATE_REDIS_FAILED"})
+        }
+    }
+
+    if (message === 'shutdown') {
+        console.log(`[Worker ${process.pid}]:-------RECEIVED SHUTDOWN COMMAND--------`);
+    }
+});
+
+function populateRedis() {
+    return require('./services/redis_populate')();
+}
 
 app.use('/user', user);
 app.use('/constant', constant);
@@ -30,5 +56,5 @@ app.get('/sete', (req, res) => {
 });
 
 app.listen(4545, function() {
-    console.log(`Worker ${process.pid} is listening to all incoming requests`);
+    console.log(`[Worker ${process.pid}]: listening`);
 });
