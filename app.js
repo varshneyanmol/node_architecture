@@ -1,14 +1,13 @@
 const cluster = require('cluster');
 
 if (cluster.isMaster) {
-
-
     console.log(`Cluster Master is running with id ${process.pid}`);
 
     const numWorkers = require('os').cpus().length;
     console.log("Number of workers: " + numWorkers);
 
     let workers = [];
+    let workersKillTimeouts = []
 
     function startOtherWorkers() {
         for (let i = 1; i < numWorkers; i++) {
@@ -48,7 +47,8 @@ if (cluster.isMaster) {
                 console.log(`[Master]: Spawning a replacement of dead worker ${this.process.pid}`);
                 spawn(i)
             } else {
-                console.log(`[Master]: worker ${this.process.pid} died intentionally`);
+                clearTimeout(workersKillTimeouts[i]);
+                console.log(`[Master]: Worker ${this.process.pid} died intentionally`);
             }
         });
     }
@@ -66,11 +66,14 @@ if (cluster.isMaster) {
         for (let i = 0; i < workers.length; i++) {
             workers[i].send({from: "master", command: "shutdown"});
             workers[i].disconnect();
-            setTimeout(function () {
+
+            workersKillTimeouts[i] = setTimeout(function () {
                 if (!workers[i].isDead()) {
+                    console.log(`[Master]: Worker ${workers[i].process.pid} still alive after 5000ms. Sending SIGKILL to kill it forcefully...`)
                     workers[i].kill('SIGKILL');
                 }
             }, 5000);
+
         }
     });
 

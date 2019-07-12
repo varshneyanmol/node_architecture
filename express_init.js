@@ -4,13 +4,11 @@ require('./register/cache');
 var user = require('./routes/user');
 var constant = require('./routes/constant');
 
-
 process.on('SIGINT', () => {
     // PM2 sends SIGINT signal to all the running node processes... so catch that signal and ignore...
     // because master will send 'shutdown' message to its worker processes
-    console.log(`[Worker ${process.pid}]: Received SIGINT signal`);
+    console.log(`[Worker ${process.pid}]: Ignoring SIGINT signal...`);
 });
-
 
 process.on('message', async function (message) {
     console.log(`[Worker ${process.pid}]: command ${message.command} from ${message.from}`);
@@ -30,10 +28,20 @@ process.on('message', async function (message) {
 });
 
 
-function shutdown() {
-    close();
-    require('./services/redis_connection').quit();
-    process.exit(0);
+async function shutdown() {
+    try {
+        await close();
+        console.log(`[Worker ${process.pid}]: mongoose connection closed`);
+
+        await require('./services/redis_connection').quit();
+        console.log(`[Worker ${process.pid}]: redis connection closed`);
+
+        console.log(`[Worker ${process.pid}]: exiting...`);
+        process.exit(0);
+
+    } catch (err) {
+        console.log(`[Worker ${process.pid}]: Error while shutting down: ` + err)
+    }
 }
 
 function populateRedis() {

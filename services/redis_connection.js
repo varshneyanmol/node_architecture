@@ -10,5 +10,6 @@ redisClient.set = util.promisify(redisClient.set);
 redisClient.hset = util.promisify(redisClient.hset);
 redisClient.setnx = util.promisify(redisClient.setnx);
 redisClient.getset = util.promisify(redisClient.getset);
+redisClient.quit = util.promisify(redisClient.quit);
 
 module.exports = redisClient;
