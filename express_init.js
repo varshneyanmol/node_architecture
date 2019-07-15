@@ -22,13 +22,13 @@ process.on('message', async function (message) {
         }
     }
 
-    if (message.command === 'shutdown') {
-        shutdown();
+    if (message.command === 'shutdown_cleanup') {
+        shutdownCleanup();
     }
 });
 
 
-async function shutdown() {
+async function shutdownCleanup() {
     try {
         await close();
         console.log(`[Worker ${process.pid}]: mongoose connection closed`);
@@ -36,8 +36,9 @@ async function shutdown() {
         await require('./services/redis_connection').quit();
         console.log(`[Worker ${process.pid}]: redis connection closed`);
 
-        console.log(`[Worker ${process.pid}]: exiting...`);
-        process.exit(0);
+        console.log(`[Worker ${process.pid}]: closed mongo and redis connections...`);
+        process.send({from: process.pid, command: "SHUTDOWN_CLEANUP_SUCCESS"});
+        // process.exit(0);
 
     } catch (err) {
         console.log(`[Worker ${process.pid}]: Error while shutting down: ` + err)

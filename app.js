@@ -7,7 +7,6 @@ if (cluster.isMaster) {
     console.log("Number of workers: " + numWorkers);
 
     let workers = [];
-    let workersKillTimeouts = []
 
     function startOtherWorkers() {
         for (let i = 1; i < numWorkers; i++) {
@@ -36,7 +35,12 @@ if (cluster.isMaster) {
                     } else if (message.command === 'POPULATE_REDIS_FAILED') {
                         console.log(`[Master]: command ${message.command} from worker ${this.process.pid}`);
                         initStuff(this);
+
+                    } else if (message.command === 'SHUTDOWN_CLEANUP_SUCCESS') {
+                        console.log(`[Master]: command ${message.command} from worker ${this.process.pid}`);
+                        this.disconnect();
                     }
+
                 });
             }
         });
@@ -47,7 +51,6 @@ if (cluster.isMaster) {
                 console.log(`[Master]: Spawning a replacement of dead worker ${this.process.pid}`);
                 spawn(i)
             } else {
-                clearTimeout(workersKillTimeouts[i]);
                 console.log(`[Master]: Worker ${this.process.pid} died intentionally`);
             }
         });
@@ -64,17 +67,32 @@ if (cluster.isMaster) {
     process.on('SIGINT', function () {
         console.log('[Master]-------RECEIVED INTERRUPT SIGNAL--------');
         for (let i = 0; i < workers.length; i++) {
-            workers[i].send({from: "master", command: "shutdown"});
-            workers[i].disconnect();
+            // workers[i].disconnect();
+            workers[i].send({from: "master", command: "shutdown_cleanup"});
 
-            workersKillTimeouts[i] = setTimeout(function () {
-                if (!workers[i].isDead()) {
-                    console.log(`[Master]: Worker ${workers[i].process.pid} still alive after 5000ms. Sending SIGKILL to kill it forcefully...`)
-                    workers[i].kill('SIGKILL');
-                }
-            }, 5000);
-
+            /*setTimeout(function () {
+                            if (!workers[i].isDead()) {
+                                console.log(`[Master]: Worker ${workers[i].process.pid} still alive after 5000ms. Sending SIGKILL to kill it forcefully...`)
+                                workers[i].kill('SIGKILL');
+                            }
+                        }, 5000);*/
         }
+
+        /*setInterval(() => {
+                    let allDone = true;
+                    for (let i = 0; i < workers.length; i++) {
+                        if (!workers[i].isDead()) {
+                            allDone = false;
+                            break;
+                        }
+                    }
+
+                    if (allDone) {
+                        process.exit(0);
+                    }
+
+                }, 100);*/
+
     });
 
 } else {
