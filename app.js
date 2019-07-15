@@ -23,6 +23,12 @@ if (cluster.isMaster) {
 
         workers[i].on('online', function () {
             console.log(`[Master]: Worker ${this.process.pid} is online`);
+
+            if (message.command === 'SHUTDOWN_CLEANUP_SUCCESS') {
+                console.log(`[Master]: command ${message.command} from worker ${this.process.pid}`);
+                this.disconnect();
+            }
+
             if (isMain) {
                 initStuff(this);
                 this.on('message', function (message) {
@@ -35,10 +41,6 @@ if (cluster.isMaster) {
                     } else if (message.command === 'POPULATE_REDIS_FAILED') {
                         console.log(`[Master]: command ${message.command} from worker ${this.process.pid}`);
                         initStuff(this);
-
-                    } else if (message.command === 'SHUTDOWN_CLEANUP_SUCCESS') {
-                        console.log(`[Master]: command ${message.command} from worker ${this.process.pid}`);
-                        this.disconnect();
                     }
 
                 });
@@ -70,28 +72,29 @@ if (cluster.isMaster) {
             // workers[i].disconnect();
             workers[i].send({from: "master", command: "shutdown_cleanup"});
 
-            /*setTimeout(function () {
-                            if (!workers[i].isDead()) {
-                                console.log(`[Master]: Worker ${workers[i].process.pid} still alive after 5000ms. Sending SIGKILL to kill it forcefully...`)
-                                workers[i].kill('SIGKILL');
-                            }
-                        }, 5000);*/
+            setTimeout(function () {
+                if (!workers[i].isDead()) {
+                    console.log(`[Master]: Worker ${workers[i].process.pid} still alive after 5000ms. Sending SIGKILL to kill it forcefully...`)
+                    workers[i].kill('SIGKILL');
+                }
+            }, 3000);
         }
 
-        /*setInterval(() => {
-                    let allDone = true;
-                    for (let i = 0; i < workers.length; i++) {
-                        if (!workers[i].isDead()) {
-                            allDone = false;
-                            break;
-                        }
-                    }
+        setInterval(() => {
+            let allDone = true;
+            for (let i = 0; i < workers.length; i++) {
+                if (!workers[i].isDead()) {
+                    allDone = false;
+                    break;
+                }
+            }
 
-                    if (allDone) {
-                        process.exit(0);
-                    }
+            console.log('[Master]: ALL DONE: ' + allDone);
+            if (allDone) {
+                process.exit(0);
+            }
 
-                }, 100);*/
+        }, 100);
 
     });
 
