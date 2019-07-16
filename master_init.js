@@ -1,3 +1,4 @@
+let cluster;
 const masterIdentity = "[Master " + process.pid + "]:";
 function sendToWorker(worker, command) {
     worker.send({
@@ -48,7 +49,6 @@ function processWorkerCommand(message) {
         default:
             console.log(`${masterIdentity} command "${message.command}" not recognised from ${message.from}`);
     }
-
 }
 
 function spawn(i, isMain) {
@@ -141,3 +141,8 @@ process.on('SIGINT', function () {
 
 });
 
+function run(c) {
+    cluster = c;
+}
+
+module.exports = run;
