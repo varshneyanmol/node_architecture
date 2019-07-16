@@ -47,6 +47,9 @@ function processWorkerCommand(message) {
             initStuff(this);
             break;
 
+        case undefined:
+            break;
+
         default:
             console.log(`${masterIdentity} command "${message.command}" not recognised from ${message.from}`);
     }
