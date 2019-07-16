@@ -1,4 +1,5 @@
-let cluster;
+const cluster = require('cluster');
+
 const masterIdentity = "[Master " + process.pid + "]:";
 function sendToWorker(worker, command) {
     worker.send({
@@ -140,9 +141,3 @@ process.on('SIGINT', function () {
     }, 100);
 
 });
-
-function run(c) {
-    cluster = c;
-}
-
-module.exports = run;
