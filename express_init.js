@@ -4,12 +4,53 @@ require('./register/cache');
 var user = require('./routes/user');
 var constant = require('./routes/constant');
 
+const workerIdentity = "[Worker " + process.pid + "]:";
+
+function sendToMaster(command) {
+    process.send({
+        from: process.pid,
+        command: command
+    });
+}
+
 process.on('SIGINT', () => {
     // PM2 sends SIGINT signal to all the running node processes... so catch that signal and ignore...
     // because master will send 'shutdown' message to its worker processes
-    console.log(`[Worker ${process.pid}]: Ignoring SIGINT signal...`);
+    console.log(`${workerIdentity} Ignoring SIGINT signal...`);
 });
 
+
+process.on('message', async function (message) {
+    if (message.command) {
+        console.log(`${workerIdentity} received command "${message.command}" from ${message.from}`);
+    }
+    switch (message.command) {
+        case 'POPULATE_REDIS':
+            try {
+                await populateRedis();
+                sendToMaster("POPULATE_REDIS_SUCCESS");
+
+            } catch (err) {
+                sendToMaster("POPULATE_REDIS_FAILED");
+            }
+            break;
+
+        case 'SHUTDOWN_CLEANUP':
+            try {
+                await shutdownCleanup();
+                sendToMaster("SHUTDOWN_CLEANUP_SUCCESS");
+
+            } catch (err) {
+                sendToMaster("SHUTDOWN_CLEANUP_FAILED");
+            }
+            break;
+
+        default:
+            console.log(`${workerIdentity} command "${message.command}" not recognised`);
+    }
+});
+
+/*
 process.on('message', async function (message) {
     console.log(`[Worker ${process.pid}]: command ${message.command} from ${message.from}`);
     if (message.command && message.command === 'POPULATE_REDIS') {
@@ -26,23 +67,25 @@ process.on('message', async function (message) {
         shutdownCleanup();
     }
 });
+*/
 
 
 async function shutdownCleanup() {
-    try {
-        await close();
-        console.log(`[Worker ${process.pid}]: mongoose connection closed`);
+    return new Promise(async (resolve, reject) => {
+        try {
+            await close();
+            console.log(`${workerIdentity} mongoose connection closed`);
 
-        await require('./services/redis_connection').quit();
-        console.log(`[Worker ${process.pid}]: redis connection closed`);
+            await require('./services/redis_connection').quit();
+            console.log(`${workerIdentity} redis connection closed`);
 
-        console.log(`[Worker ${process.pid}]: closed mongo and redis connections...`);
-        process.send({from: process.pid, command: "SHUTDOWN_CLEANUP_SUCCESS"});
-        // process.exit(0);
+            resolve(1);
+        } catch (err) {
+            console.log(`${workerIdentity} Error while closing connections: ` + err);
+            reject(err);
+        }
 
-    } catch (err) {
-        console.log(`[Worker ${process.pid}]: Error while shutting down: ` + err)
-    }
+    });
 }
 
 function populateRedis() {
@@ -76,3 +119,4 @@ app.get('/sete', (req, res) => {
 app.listen(4545, function () {
     console.log(`[Worker ${process.pid}]: listening`);
 });
+
