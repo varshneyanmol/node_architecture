@@ -65,7 +65,6 @@ function spawn(i, isMain) {
             processWorkerCommand.call(this, message);
         });
 
-
         /*this.on('message', function (message) {
             if (message.command === 'SHUTDOWN_CLEANUP_SUCCESS') {
                 console.log(`${masterIdentity} received command ${message.command} from worker ${this.process.pid}`);
@@ -95,7 +94,7 @@ function spawn(i, isMain) {
         console.log(`${masterIdentity} worker ${this.process.pid} died with code ${code} and signal ${signal}`);
         if (!this.exitedAfterDisconnect) {
             console.log(`${masterIdentity} spawning a replacement of dead worker ${this.process.pid}`);
-            spawn(i);
+            // spawn(i);
 
         } else {
             console.log(`${masterIdentity} worker ${this.process.pid} died intentionally`);
@@ -110,13 +109,12 @@ spawn(0, true);
 // when pm2 sends kill commands, it sends 'SIGINT' signal to all the running node process be it master or child.
 // SIGINT and all these signals are sent only in linux environment
 process.on('SIGINT', function () {
-    console.log(`${masterIdentity} -------RECEIVED INTERRUPT SIGNAL--------`);
+    console.log(`${masterIdentity} RECEIVED SIGINT SIGNAL`);
     const maxWorkerTime = 3000;
     for (let i = 0; i < workers.length; i++) {
         // workers[i].disconnect();
         sendToWorker(workers[i], 'SHUTDOWN_CLEANUP');
         // workers[i].send({from: "master", command: "SHUTDOWN_CLEANUP"});
-
 
         setTimeout(function () {
             if (!workers[i].isDead()) {
@@ -140,7 +138,6 @@ process.on('SIGINT', function () {
             console.log(`${masterIdentity} exiting...`);
             process.exit(0);
         }
-
     }, 100);
 
 });

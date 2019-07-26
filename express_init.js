@@ -3,6 +3,7 @@ const {close} = require('./register/database_connection');
 require('./register/cache');
 var user = require('./routes/user');
 var constant = require('./routes/constant');
+const s = require('./services/redis_event_test');
 
 const workerIdentity = "[Worker " + process.pid + "]:";
 
@@ -84,13 +85,13 @@ async function shutdownCleanup() {
             console.log(`${workerIdentity} Error while closing connections: ` + err);
             reject(err);
         }
-
     });
 }
 
 function populateRedis() {
     return require('./services/redis_populate')();
 }
+
 
 app.use('/user', user);
 app.use('/constant', constant);
@@ -119,4 +120,5 @@ app.get('/sete', (req, res) => {
 app.listen(4545, function () {
     console.log(`[Worker ${process.pid}]: listening`);
 });
+
 

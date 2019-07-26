@@ -14,6 +14,7 @@
     "pm2": "^3.5.1",
     "redis": "^2.8.0",
     "redis-leader": "^0.1.0",
+    "redis-scheduler": "^1.0.0",
     "replace-in-file": "^4.1.1"
   }
 }
