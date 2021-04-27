@@ -14,7 +14,7 @@
     "express": "^4.17.1",
     "mongoose": "^5.6.2",
     "pm2": "^3.5.1",
-    "redis": "^2.8.0",
+    "redis": "^3.1.1",
     "redis-leader": "^0.1.0",
     "redis-scheduler": "^1.0.0",
     "replace-in-file": "^4.1.1"
